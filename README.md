@@ -1,4 +1,4 @@
-# dentist
+# Dentist Multisite
 Dentist Multisite repository - Drupal 7
 
 
