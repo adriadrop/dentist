@@ -1,0 +1,73 @@
+diff --git a/google_adwords_remarketing.module b/google_adwords_remarketing.module
+index 236de18..65753ca 100644
+--- a/google_adwords_remarketing.module
++++ b/google_adwords_remarketing.module
+@@ -136,9 +136,8 @@ function _google_adwords_remarketing_get_assigned_campaign(){
+       $query->leftjoin('google_adwords_remarketing_roles', 'r', 'g.garcid = r.garcid');
+       $garc_list = $query
+         ->fields('g')
+-        ->condition('g.theme', $theme)
++        ->fields('r', array('rid'))
+         ->condition('g.status', 1)
+-        ->condition(db_or()->condition('r.rid', array_keys($user->roles), 'IN')->isNull('r.rid'))
+         ->orderBy('g.weight')
+         ->distinct()
+         ->execute()
+@@ -148,20 +147,38 @@ function _google_adwords_remarketing_get_assigned_campaign(){
+   }
+   $garcs = array();
+   foreach ($garc_list as $garc) {
++    $role_match = FALSE;
++    if ($garc->rid) {
++      if (in_array($garc->rid, array_keys($user->roles))) {
++        $role_match = TRUE;
++      }
++    }
++    else {
++      $role_match = TRUE;
++    }
++    $theme_match = FALSE;
++    if ($garc->theme) {
++      if ($garc->theme == $theme) {
++        $theme_match = TRUE;
++      }
++    }
++    else {
++      $theme_match = TRUE;
++    }
+     $page_match = FALSE;
+     // Match path if necessary
+     if ($garc->pages) {
+       if ($garc->visibility < 2) {
+-      $path = drupal_get_path_alias($_GET['q']);
+-      // Compare with the internal and path alias (if any).
+-      $page_match = drupal_match_path($path, $garc->pages);
+-      if ($path != $_GET['q']) {
+-        $page_match = $page_match || drupal_match_path($_GET['q'], $garc->pages);
+-      }
+-      // When $block->visibility has a value of 0, the block is displayed on
+-      // all pages except those listed in $block->pages. When set to 1, it
+-      // is displayed only on those pages listed in $block->pages.
+-      $page_match = !($garc->visibility xor $page_match);
++        $path = drupal_get_path_alias($_GET['q']);
++        // Compare with the internal and path alias (if any).
++        $page_match = drupal_match_path($path, $garc->pages);
++        if ($path != $_GET['q']) {
++          $page_match = $page_match || drupal_match_path($_GET['q'], $garc->pages);
++        }
++        // When $block->visibility has a value of 0, the block is displayed on
++        // all pages except those listed in $block->pages. When set to 1, it
++        // is displayed only on those pages listed in $block->pages.
++        $page_match = !($garc->visibility xor $page_match);
+       }
+       else {
+         $page_match = drupal_eval($garc->pages);
+@@ -170,7 +187,7 @@ function _google_adwords_remarketing_get_assigned_campaign(){
+     else {
+       $page_match = TRUE;
+     }
+-    if ($page_match){
++    if ($theme_match && $role_match && $page_match){
+       $garcs[$garc->weight][$garc->garcid] = $garc;
+     }
+   }

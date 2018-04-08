@@ -1,0 +1,823 @@
+/* normalize.css 2012-03-11T12:53 UTC - http://github.com/necolas/normalize.css */
+
+/* =============================================================================
+   Normalize.css is intended to be used as an alternative to CSS resets.
+
+   It is suggested that you read through the normalize.css file and customise it
+   to meet the design requirements of a project rather including it as a "black
+   box". @see http://nicolasgallagher.com/about-normalize-css/
+
+   Also: @see http://meiert.com/en/blog/20080419/reset-style-sheets-are-bad/
+         @see http://snook.ca/archives/html_and_css/no_css_reset/
+   ========================================================================== */
+
+
+/* =============================================================================
+   HTML5 display definitions
+   ========================================================================== */
+
+/*
+ * Corrects block display not defined in IE6/7/8/9 & FF3
+ */
+
+article,
+aside,
+details,
+figcaption,
+figure,
+footer,
+header,
+hgroup,
+menu,
+nav,
+section,
+summary {
+  display: block;
+}
+
+/*
+ * Corrects inline-block display not defined in IE6/7/8/9 & FF3
+ */
+
+audio,
+canvas,
+video {
+  display: inline-block;
+  *display: inline;
+  *zoom: 1;
+}
+
+/*
+ * Prevents modern browsers from displaying 'audio' without controls
+ * Remove excess height in iOS5 devices
+ */
+
+audio:not([controls]) {
+  display: none;
+  height: 0;
+}
+
+/*
+ * Addresses styling for 'hidden' attribute not present in IE7/8/9, FF3, S4
+ * Known issue: no IE6 support
+ */
+
+[hidden] {
+  display: none;
+}
+
+
+/* =============================================================================
+   Base
+   ========================================================================== */
+
+/* Instead of relying on the fonts that are available on a user's computer, you
+   can use web fonts which, like images, are resources downloaded to the user's
+   browser. Because of the bandwidth and rendering resources required, web fonts
+   should be used with care.
+
+   Numerous resources for web fonts can be found on Google. Here are a few
+   websites where you can find Open Source fonts to download:
+   - http://www.fontsquirrel.com/fontface
+   - http://www.theleagueofmoveabletype.com
+
+   In order to use these fonts, you will need to convert them into formats
+   suitable for web fonts. We recommend the free-to-use Font Squirrel's
+   Font-Face Generator:
+     http://www.fontsquirrel.com/fontface/generator
+
+   The following is an example @font-face declaration. This font can then be
+   used in any ruleset using a property like this:  font-family: Example, serif;
+
+   Since we're using Sass, you'll need to declare your font faces here, then you
+   can add them to the font variables in the _base.scss partial.
+*/
+
+/*
+@font-face {
+  font-family: 'Example';
+  src: url('../fonts/example.eot');
+  src: url('../fonts/example.eot?iefix') format('eot'),
+    url('../fonts/example.woff') format('woff'),
+    url('../fonts/example.ttf') format('truetype'),
+    url('../fonts/example.svg#webfontOkOndcij') format('svg');
+  font-weight: normal;
+  font-style: normal;
+}
+*/
+
+/*
+ * 1. Corrects text resizing oddly in IE6/7 when body font-size is set using em units
+ *    http://clagnut.com/blog/348/#c790
+ * 2. Prevents iOS text size adjust after orientation change, without disabling user zoom
+ *    www.456bereastreet.com/archive/201012/controlling_text_size_in_safari_for_ios_without_disabling_user_zoom/
+ */
+
+html {
+  /*
+   * To use a 14px font size on the page, delete the 16px and 12px declarations.
+   * To use a 12px font size on the page, delete the 16px and 14px declarations.
+   */
+
+  /* Use a 12px base font size */
+  font-size: 75%; /* 16px x 75% = 12px */
+  /* Use a 14px base font size */
+  font-size: 87.5%; /* 16px x .875 = 14px */
+
+  /* Use a 16px base font size */
+  font-size: 100%; /* 1 */
+
+  -webkit-text-size-adjust: 100%; /* 2 */
+  -ms-text-size-adjust: 100%; /* 2 */
+
+  /* Establish a vertical rhythm. */
+  line-height: 1.5em;
+}
+
+/*
+ * Instead of relying on the fonts that are available on a user's computer, you
+ * can use web fonts which, like images, are resources downloaded to the user's
+ * browser. Because of the bandwidth and rendering resources required, web fonts
+ * should be used with care.
+ *
+ * Numerous resources for web fonts can be found on Google. Here are a few
+ * websites where you can find Open Source fonts to download:
+ * - http://www.fontsquirrel.com/fontface
+ * - http://www.theleagueofmoveabletype.com
+ *
+ * In order to use these fonts, you will need to convert them into formats
+ * suitable for web fonts. We recommend the free-to-use Font Squirrel's
+ * Font-Face Generator:
+ *   http://www.fontsquirrel.com/fontface/generator
+ *
+ * The following is an example @font-face declaration. This font can then be
+ * used in any ruleset using a property like this:  font-family: Example, serif;
+
+@font-face {
+  font-family: 'Example';
+  src: url('../fonts/example.eot');
+  src: url('../fonts/example.eot?iefix') format('eot'),
+    url('../fonts/example.woff') format('woff'),
+    url('../fonts/example.ttf') format('truetype'),
+    url('../fonts/example.svg#webfontOkOndcij') format('svg');
+  font-weight: normal;
+  font-style: normal;
+}
+
+ */
+
+/*
+ * Addresses font-family inconsistency between 'textarea' and other form elements.
+ */
+
+html,
+button,
+input,
+select,
+textarea {
+  /* The following font family declarations are based on the Microsoft core web
+   * fonts which are common fonts available on most computer systems. The DejaVu
+   * and Nimbus Sans fonts are commonly available on Linux systems where the MS
+   * fonts are less common. Tahoma and Helvetica are also widely available.
+   *
+   * A user's web browser will look at the comma-separated list and will
+   * attempt to use each font in turn until it finds one that is available
+   * on the user's computer. The final "generic" font (sans-serif, serif or
+   * monospace) hints at what type of font to use if the web browser doesn't
+   * find any of the fonts in the list.
+
+  font-family: "Times New Roman", Times, Georgia, "DejaVu Serif", serif;
+  font-family: Times, "Times New Roman", Georgia, "DejaVu Serif", serif;
+  font-family: Georgia, "Times New Roman", "DejaVu Serif", serif;
+
+  font-family: Verdana, Tahoma, "DejaVu Sans", sans-serif;
+  font-family: Tahoma, Verdana, "DejaVu Sans", sans-serif;
+  font-family: Helvetica, Arial, "Nimbus Sans L", sans-serif;
+  font-family: Arial, Helvetica, "Nimbus Sans L", sans-serif;
+
+  font-family: "Courier New", "DejaVu Sans Mono", monospace;
+
+   */
+
+  font-family: Verdana, Tahoma, "DejaVu Sans", sans-serif;
+}
+
+/*
+ * Addresses margins handled incorrectly in IE6/7
+ */
+
+body {
+  margin: 0;
+}
+
+
+/* =============================================================================
+   Links
+   ========================================================================== */
+
+/*
+ * The order of link states are based on Eric Meyer's article:
+ * http://meyerweb.com/eric/thoughts/2007/06/11/who-ordered-the-link-states
+ */
+
+a {
+  color:#818196;
+  text-decoration:underline;
+}
+
+a:visited {
+}
+
+a:hover,
+a:focus {
+  text-decoration:underline;
+  color:#6f6f81;
+}
+
+a:active {
+  color:#818196;
+}
+
+/*
+ * Addresses outline displayed oddly in Chrome
+ */
+
+a:focus {
+  outline: thin dotted;
+}
+
+/*
+ * Improves readability when focused and also mouse hovered in all browsers
+ * people.opera.com/patrickl/experiments/keyboard/test
+ */
+
+a:hover,
+a:active {
+  outline: 0;
+}
+
+
+/* =============================================================================
+   Typography
+
+   To achieve a pleasant vertical rhythm, we use Compass' Vertical Rhythm mixins
+   so that the line height of our base font becomes the basic unit of vertical
+   measurement. We use multiples of that unit to set the top and bottom margins
+   for our block level elements and to set the line heights of any fonts.
+   For more information, see http://24ways.org/2006/compose-to-a-vertical-rhythm
+   ========================================================================== */
+
+/*
+ * Addresses font sizes and margins set differently in IE6/7
+ * Addresses font sizes within 'section' and 'article' in FF4+, Chrome, S5
+ */
+h1,h2,h3,h4,h5{
+  font-weight:normal;
+  margin-bottom:10px;
+  margin-top: 0;
+  color:#6f6f81;
+  text-shadow:1px 1px 1px  white;
+}
+
+h1{
+  font-size:30px;
+  background-color:#f0eff7;
+  border:1px solid #e3e2ea;
+  line-height:48px;
+  padding:0 9px;
+  margin-bottom:20px !important;
+}
+
+h2{
+  font-size:24px;
+  background-color:#fbfbfc;
+  border:1px solid #eeeeef;
+  line-height:38px;
+  padding:0 9px;
+}
+
+h3{
+  font-size:20px;
+  background-color:#fbfbfc;
+  border:1px solid #eeeeef;
+  line-height:28px;
+  padding:0 9px;
+}
+
+h4{
+  font-size:16px;
+  background-color:#fbfbfc;
+  border:1px solid #eeeeef;
+  line-height:22px;
+  padding:0 9px;
+}
+
+h5{
+  font-size:16px;
+  line-height:20px;
+}
+
+/* Thematic break */
+hr {
+  height: 1px;
+  border: 1px solid #666;
+  padding-bottom: -1px;
+  margin: 1.5em 0;
+}
+
+/*
+ * Addresses styling not present in IE7/8/9, S5, Chrome
+ */
+
+abbr[title] {
+  border-bottom: 1px dotted;
+  cursor: help;
+  white-space: nowrap;
+}
+
+/*
+ * Addresses style set to 'bolder' in FF3+, S4/5, Chrome
+*/
+
+b,
+strong {
+  font-weight: bold;
+}
+
+blockquote {
+  /* Sets 1 unit of vertical rhythm on the top and bottom margin. */
+  margin: 1.5em 30px;
+}
+
+/*
+ * Addresses styling not present in S5, Chrome
+ */
+
+dfn {
+  font-style: italic;
+}
+
+/*
+ * Addresses styling not present in IE6/7/8/9
+ */
+
+mark {
+  color: #000;
+}
+
+/*
+ * Addresses margins set differently in IE6/7
+ */
+
+p,
+pre {
+  /* Sets 1 unit of vertical rhythm on the top and bottom margin. */
+  line-height:1.5em;
+  padding-bottom:7px;
+}
+
+/*
+ * Corrects font family set oddly in IE6, S4/5, Chrome
+ * en.wikipedia.org/wiki/User:Davidgothberg/Test59
+ */
+
+pre,
+code,
+kbd,
+samp,
+tt,
+var {
+}
+
+/*
+ * Improves readability of pre-formatted text in all browsers
+ */
+
+pre {
+  white-space: pre;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  border:1px solid #EEEEEF;
+  background-color:#fbfbfc;
+  margin-bottom:7px;
+  display:block;
+  padding:8px;
+  color:#818196;
+  white-space:normal;
+}
+
+/*
+ * 1. Addresses CSS quotes not supported in IE6/7
+ * 2. Addresses quote property not supported in S4
+ */
+
+/* 1 */
+
+q {
+  quotes: none;
+}
+
+/* 2 */
+
+q:before,
+q:after {
+  content: '';
+  content: none;
+}
+
+/* @todo Determine how big element affects vertical rhythm. */
+small {
+  font-size: 75%;
+}
+
+/*
+ * Prevents sub and sup affecting line-height in all browsers
+ * gist.github.com/413930
+ */
+
+sub,
+sup {
+  font-size: 75%;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+
+sup {
+  top: -0.5em;
+}
+
+sub {
+  bottom: -0.25em;
+}
+
+em{
+  font-style: italic;
+}
+/* =============================================================================
+   Lists
+   ========================================================================== */
+
+/*
+ * Addresses margins set differently in IE6/7
+ */
+
+dl,
+menu,
+ol,
+ul,
+.item-list ul /* Drupal override */ {
+  margin:0 1.5em 1.5em 0;
+  padding-left:1.5em;
+}
+
+.item-list ul li { /* Drupal override */
+  margin: 0;
+}
+
+dd {
+  margin: 0 0 0 30px; /* LTR */
+}
+
+ul ul, ul ol,
+ol ul, ol ol,
+.item-list ul ul, .item-list ul ol,
+.item-list ol ul, .item-list ol ol {
+  margin: 0; /* Turn off margins on nested lists. */
+}
+
+/*
+ * Corrects list images handled incorrectly in IE7
+ */
+
+nav ul,
+nav ol {
+  list-style: none;
+  list-style-image: none;
+}
+li{line-height:1.5em;}
+
+li ul,
+li ol{margin:0;}
+
+ul{list-style-type:disc;}
+ol{list-style-type:decimal;}
+
+dl{margin:0 0 1.5em 0;}
+dl dt{font-weight:bold;}
+dd{margin-left:1.5em;}
+
+/* =============================================================================
+   Embedded content
+   ========================================================================== */
+
+/*
+ * 1. Removes border when inside 'a' element in IE6/7/8/9, FF3
+ * 2. Improves image quality when scaled in IE7
+ *    code.flickr.com/blog/2008/11/12/on-ui-quality-the-little-things-client-side-image-resizing/
+ */
+
+img {
+  border: 0; /* 1 */
+  -ms-interpolation-mode: bicubic; /* 2 */
+
+  /* vertical-align: bottom; */ /* Suppress the space beneath the baseline */
+
+  /* Responsive images */
+  /* @todo Add responsive embedded video. */
+  width: auto;
+  height: auto;
+}
+
+.node-page img {
+  border: 0; /* 1 */
+  -ms-interpolation-mode: bicubic; /* 2 */
+
+  /* vertical-align: bottom; */ /* Suppress the space beneath the baseline */
+
+  /* Responsive images */
+  /* @todo Add responsive embedded video. */
+  width: 100%;
+  height: auto;
+}
+
+/*
+ * Corrects overflow displayed oddly in IE9
+ */
+
+svg:not(:root) {
+  overflow: hidden;
+}
+
+
+/* =============================================================================
+   Figures
+   ========================================================================== */
+
+/*
+ * Addresses margin not present in IE6/7/8/9, S5, O11
+ */
+
+figure {
+  margin: 0;
+}
+
+
+/* =============================================================================
+   Forms
+   ========================================================================== */
+
+label{font-weight:bold}
+
+span.cke_skin_kama{
+  border:0!important;
+  padding:0!important;
+}
+
+select,
+textarea,
+.form-text,
+.form-textarea,
+.form-select{
+  border:1px solid #ccc;
+  font:12px Tahoma,Verdana,Arial,Helvetica,sans-serif;
+}
+
+input.form-text:focus,
+textarea:focus{border:1px solid #454550}
+
+input{
+  font:12px Tahoma,Arial,Helvetica,sans-serif;
+  padding:4px;
+}
+
+form input{margin-bottom:5px}
+
+form .form-item{margin-bottom:10px}
+
+input.form-submit{
+  margin:10px 2px;
+  cursor:pointer;
+font-weight: bold;
+padding: 7px;
+font-size: 15px;
+width: 120px;
+  color:white;
+  background-color:#818196;
+  border: none;
+}
+
+input.form-submit:hover{background-color:#5B5B6A;color:white}
+
+input.form-submit:active{background:#5B5B6A}
+
+html.js input.form-autocomplete{background-position:100% 6px}
+
+html.js input.throbbing{background-position:100% -14px}
+
+fieldset{
+  border:1px solid #6FCFEF;
+  margin-bottom:10px;
+  padding:5px;
+  background-color:transparent;
+  -moz-border-radius:5px;
+  -webkit-border-radius:5px;
+}
+
+fieldset fieldset{  background-color:transparent;}
+
+fieldset.collapsed{  background-color:transparent;}
+
+fieldset fieldset.collapsed{  background-color:transparent;}
+
+.collapsible legend{
+  background-image:url(img/arrow-expanded.png);
+  padding-right:16px;
+  background-position:right 50%;
+  background-repeat:no-repeat;
+}
+
+.collapsed legend{background-image:url(img/arrow-collapsed.png)}
+
+
+/* =============================================================================
+   Tables
+   ========================================================================== */
+
+/*
+ * Remove most spacing between table cells
+ */
+tt, code{
+  background-color:#F8F7F8;
+  padding:0 2px
+}
+
+table {
+  margin-bottom: 10px;
+}
+
+/*
+ * Drupal provides table styling which is only useful for its admin section
+ * forms, so we override this default CSS. (We set it back in forms.css.)
+ */
+
+table caption{
+  background-color:#F8F7F8;
+  padding:5px;
+  margin-bottom:1px;
+  font-size: 20px;
+  text-align: left;
+}
+
+
+table a .dental-title{
+font-size: 16px;
+text-transform: uppercase;
+}
+
+tbody td{padding:5px}
+
+thead th,
+tbody th{
+  background-color:#E1E2DC;
+  padding:5px;
+}
+
+thead tr{border-bottom:1px solid white;}
+thead tr th{border-bottom: none;}
+
+tbody td{border-bottom:1px solid #EEEEEF; vertical-align:top;}
+
+tbody th{border-bottom:1px solid white;}
+
+tr.odd{background-color:#fff;}
+
+tr.even{background-color:#F3F4EE;}
+
+tr.even:hover, tr.odd:hover {
+background: #FFFFBF !important;
+}
+/*********************************** TABS *************************************/
+
+ul.tabs.primary,
+ul.tabs.secondary {
+  clear: both;
+  overflow: hidden;
+  font-size: 12px;
+  margin: 10px 0;
+  border-bottom: 2px solid #818196;
+  padding: 0;
+}
+ul.tabs.primary li,
+ul.tabs.secondary li {
+  border: none !important;
+  text-shadow: none;
+  float: none;
+  margin: 0;
+}
+ul.tabs.primary li a,
+ul.tabs.secondary li a {
+  margin:0 5px 0 0;
+  padding:6px 6px 4px 6px;
+  display:block;
+  float:left;
+  background: none;
+  border: none;
+  border-radius: 0;
+  letter-spacing: 0;
+}
+
+ul.tabs li.active a {
+  background-color:#818196;
+  padding:6px 6px 4px 6px;
+  margin:0 5px 0 0;
+  color:white;
+}
+
+ul.tabs li a:hover{
+  background-color:#5B5B6A;
+  color:white;
+  padding:6px 6px 4px 6px;
+  margin:0 5px 0 0;
+}
+/*
+ * Blocks.
+ */
+.sidebar .block{
+  margin-bottom:10px;
+  background-color:#f0eff7;
+  border:1px solid #e3e2ea;
+  padding:5px;
+  -moz-border-radius:5px;
+  -webkit-border-radius:5px;
+  border-radius:5px;
+}
+.sidebar .block.last {
+  margin-bottom: 0;
+}
+
+/*.block-system{text-align:center;}*/
+
+.sidebar .block-comment .item-list ul li{
+  margin-bottom:7px;
+  font-size:11px;
+}
+
+.sidebar .block-comment .item-list ul li a{font-size:12px;}
+.sidebar .block h2{
+  font-size:16px;
+  background-color:#fbfbfc;
+  border:1px solid #E3E2EA;
+  line-height:22px;
+  padding:0 4px;
+  -moz-border-radius:5px;
+  -webkit-border-radius:5px;
+}
+/*
+ * Breadcrumb.
+ */
+.breadcrumb {
+  font-size: 12px;
+  line-height: 14px;
+  margin-bottom: 10px;
+}
+/********************************** PAGER *************************************/
+
+.item-list .pager{
+  display:block;
+  height:30px;
+  margin-top:20px;
+  font-size:12px;
+}
+.item-list ul.pager li {
+  padding: 0;
+}
+ul.pager li a{
+  padding:3px 5px;
+  margin:0;
+  border:1px solid #6F6F81;
+  background-color:#C8CBDD;
+}
+
+ul.pager li.pager-current{
+  padding:3px 5px;
+  border:1px solid #6F6F81;
+  background-color:#818196;
+  color:white
+}
+
+ul.pager li.pager-next a,
+ul.pager li.pager-previous a,
+ul.pager li.pager-last a,
+ul.pager li.pager-first a{
+  border:1px solid white;
+  background:none;
+  padding:3px 2px;
+}
+
+ul.pager li a:hover{
+  background-color:#6F6F81;
+  color:white;
+  text-decoration:none;
+  border:1px solid #6F6F81;
+}

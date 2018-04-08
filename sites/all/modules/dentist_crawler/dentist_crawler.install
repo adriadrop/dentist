@@ -1,0 +1,51 @@
+<?php
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function dentist_crawler_install() {
+  variable_set('dentist_crawler_enabled', 0);
+  variable_set('dentist_crawler_frequency', 3600);
+  variable_set('dentist_crawler_dedupe_action', 'skip');
+  variable_set('dentist_crawler_city', 'turkey');
+  variable_set('dentist_crawler_last_page', '0');
+  variable_set('dentist_crawler_timestamp', time());
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function dentist_crawler_uninstall() {
+  variable_del('dentist_crawler_enabled');
+  variable_del('dentist_crawler_frequency');
+  variable_del('dentist_crawler_dedupe_action');
+  variable_del('dentist_crawler_city');
+  variable_del('dentist_crawler_last_page');
+  variable_del('dentist_crawler_timestamp');
+}
+
+/**
+ * Implementation of hook_schema().
+ */
+function dentist_crawler_schema(){
+$schema = array();
+$schema['dentist_crawler'] = array(
+  'description' => 'URLs and their NIDs of crawled items.',
+  'fields' => array(
+      'url' => array(
+        'description' => 'URL of the dentist page.', 
+        'type' => 'varchar', 
+        'length' => 255, 
+        'not null' => TRUE, 
+      ), 
+	  'nid' => array(
+        'description' => 'Drupal node ID of the created node.', 
+        'type' => 'int',
+        'length' => 33, 
+        'not null' => TRUE, 
+      ),
+	),
+  );
+  
+return $schema;
+}

@@ -1,0 +1,10 @@
+name = VBO Node Search and Replace
+description = VBO action to search and replace text in the node. Field, search and replace texts are configurable.
+core = 7.x
+
+dependencies[] = views
+dependencies[] = views_bulk_operations (>=7.x-3.0)
+
+package = Views
+
+version = 1.2

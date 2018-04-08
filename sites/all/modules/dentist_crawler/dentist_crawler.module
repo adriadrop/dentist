@@ -1,0 +1,762 @@
+<?php
+define('CRAWLER_NODE_TYPE', 'dentist');
+define('CRAWLER_FIELD_LOCATION', 'field_location');
+define('CRAWLER_FIELD_IMAGES', 'field_images');
+define('CRAWLER_FIELD_OPEN', 'field_opening_hours');
+define('CRAWLER_FIELD_ABOUT', 'body');
+define('CRAWLER_FIELD_URL', 'field_url');
+define('CRAWLER_FIELD_PHONE', 'field_phone');
+define('CRAWLER_AUTHOR_UID', '1');
+define('CRAWLER_AUTHOR_USERNAME', 'setup');
+
+/**
+ *  implementation of hook_menu.
+ */
+function dentist_crawler_menu(){
+  $items = array();
+  $items['admin/config/system/dentist-crawler'] = array(
+    'title' => 'Cawler settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('dentist_crawler_admin'),
+    'access arguments' => array('Administer site configuration '),
+    'description' => 'Settings for WhatClinic crawler.',
+    'file' => 'dentist_crawler.admin.inc',
+  );
+  $items['admin/config/system/dentist-crawler/delete-uuids'] = array(
+    'title' => 'UUID Removal',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('dentist_crawler_sqlform'),
+    'access arguments' => array('Administer site configuration '),
+    'description' => 'Remove UUID records for a country.',
+    'file' => 'dentist_crawler.admin.inc',
+  );
+  return $items;
+}
+
+/**
+ * Implementation of hook_cron
+ */
+function dentist_crawler_cron(){
+  $last = variable_get('dentist_crawler_timestamp', 'und');
+  
+  if ($last == 'und') {
+    variable_set('dentist_crawler_timestamp', REQUEST_TIME);
+	return;
+  }
+  
+  if (variable_get('dentist_crawler_enabled', FALSE) && (REQUEST_TIME - variable_get('dentist_crawler_timestamp', '') > variable_get('dentist_crawler_frequency', 3600))){
+    $url = 'http://www.whatclinic.com/dentists/' . variable_get('dentist_crawler_city', 'turkey');
+	//http://www.whatclinic.com/dentists/turkey/index.aspx?page=1
+	$last_pager = variable_get('dentist_crawler_last_page', 0);
+	if ($last_pager){
+		$url .= '/index.aspx?page='.$last_pager;
+	}
+	if (ini_get('max_execution_time') < 300){
+	  set_time_limit(299);// we have whole new 299 seconds just for the crawler incase some other module used the max_execution_time.
+	}; 
+	$processed = dentist_crawler_crawl($url);
+	//$processed = 0;
+	if ($processed){
+	  variable_set('dentist_crawler_timestamp', REQUEST_TIME);
+	  variable_set('dentist_crawler_last_page', $last_pager + 1);
+	}
+  }
+}
+
+/**
+ * parses a paged URL and returns an array of URLs to crawl.
+ */
+function dentist_crawler_crawl($url){
+  $html_cont = file_get_contents($url);
+  $html = new simple_html_dom();
+  $html->load($html_cont);
+  unset($html_cont);
+  $href = array();
+  $listings = $html->find('div[typeof=MedicalClinic]');
+  if (is_null($listings) || empty($listings)){
+    watchdog('dentist_crawler', t('Found an end point for the given URL where no listings found. Self-deactivating crawler.'));
+    variable_get('dentist_crawler_enabled', 0);
+	$html->clear();
+	return;
+  }
+  foreach ($listings as $listing){
+    if ($listing->parent()->class != 'multiclinicgroup') {
+	  $hr = $listing->find('h3 a');
+	  foreach ($hr as $h){
+	    $href[] = 'http://www.whatclinic.com' . $h->href;
+	  }
+    } 
+  }
+  $html->clear();
+  unset ($html, $listings, $listing);
+  $processed = dentist_crawler_process_nodes($href, $url);
+  return $processed;
+}
+
+/**
+ * Crawls a given array of URLs and watchdog()'s the result.
+ */
+function dentist_crawler_process_nodes($href, $parent_url = ''){
+  if (empty($href)){
+    return;
+  }
+  
+  $start = time();
+  $count = 0;
+  $new = 0;
+  $skipped = 0;
+  $updated = 0;
+  $replaced = 0;
+  
+  foreach ($href as $url){
+    if (!valid_url($url)){
+	  watchdog('dentist_crawler', 'Invalid URL passed to the module. Check parsing namespaces', array(), WATCHDOG_NOTICE);
+	  continue;
+	}
+	$return_val = dentist_crawl_process_individual($url);
+	//$return_val = array('success' = FALSE, 'action' = NULL);
+	if ($return_val['success']){
+	  ++$count;
+	  //do, skip, update, replace
+	  switch ($return_val['action']){
+	    case 'do':
+		  ++$new;
+		  break;
+		case 'skip':
+		  ++$skipped;
+		  break;
+		case 'update':
+		  ++$updated;
+		  break;
+		case 'replace':
+		  ++$replaced;
+		  break;
+	  }
+	}
+  }
+  if ($count > 0){
+    $end = time();
+	$dur = ($end - $start);
+    watchdog('dentist_crawler', t('Crawling job successfully finished for @url in @sec seconds. @items processed, @new new items, @updated items updated, @skipped items skipped and @replaced items replaced.', 
+	  array(
+	    '@url' => $parent_url, 
+	    '@items' => $count, 
+		'@new' => $new, 
+		'@skipped' => $skipped, 
+		'@updated' => $updated, 
+		'@replaced' => $replaced,
+		'@sec' => $dur,
+		)));
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+ * heart of the module. Parses and creates a node (or update, replace or skip) from data of the source.
+ * return['success'] = TRUE, FALSE.
+ */
+function dentist_crawl_process_individual($url){
+  $return_val = array('success' => FALSE, 'action' => NULL);
+  /* check if the given URL is already parsed.
+  get the action from the function and proceed. */
+  $action = dentist_crawl_actionchoose($url);
+  $return_val['action'] = $action['action'];
+  
+  if ($action['action'] == 'skip'){
+    $return_val['success'] = TRUE;
+	return $return_val;
+  }
+  
+  $html_cont = @file_get_contents($url); //bypass PHP error reporting and watchlog() it to relevant category.
+  if ($html_cont === FALSE){
+    watchdog('dentist_crawler', t('An error occurred when trying to fetch the URL @url.', array('@url' => $url)));
+	return;
+  }
+  $html = new simple_html_dom();
+  $html->load($html_cont);
+  unset($html_cont);
+  
+  $title = @$html->find('h1[property=name]', 0)->innertext;
+  if (empty($title)){
+	watchdog('dentist_crawler', t('Found a URL with no dentist title in div ID provider_details. Skipping URL: @url.', array('@url' => $url)));
+	return;
+  }
+  //$title = html_entity_decode($title);
+  $title = ucwords(strtolower($title));
+  $title = htmlspecialchars_decode($title);
+  $about = $html->find('div[id=divAbout] div[property=description]', 0);
+  if (!empty($about) && isset($about->find('span.contact_green', 0)->innertext)){
+    $remove = $about->find('span.contact_green', 0)->innertext;
+    $about  = str_replace($remove, '', $about->innertext);
+    unset($remove);
+  }
+  elseif(!empty($about)){
+    $about = $about->innertext;
+  }
+
+  $phones = @$html->find('div[id=provider_details] span.tel span.pseudoLink', 0)->rellink;
+  if (isset($phones) && !empty($phones) && valid_url($phones)){
+    $phone_numbers = _dentist_crawler_parse_numbers($phones); 
+  }
+  unset($phones);
+  
+  $openning = @$html->find('div[id=providerDetails_providerDetailsTabOverview_divOpeningHours]', 0)->innertext;
+
+  $image_wrappers = $html->find('div[id=providerDetails_providerDetailsTabOverview_divAlbum] a');
+  $image_srcs = array();
+  $images = array();
+  $image_hist = array();
+  if (is_array($image_wrappers) && count($image_wrappers) > 0){
+    foreach ($image_wrappers as $iid => $image_wrapper){
+      $image_src = $image_wrapper->href;
+	  if (isset($image_hist[$image_src])) {
+	    $si = FALSE;
+	  }
+	  else{
+	    $image_hist[$image_src] = '';
+		$si = TRUE;
+	  }
+	  $image_hist[] = $image_src;
+      if (!empty($image_src) && valid_url($image_src) && $si){
+        $image_info = _dentist_crawl_image_curl_individual($image_src, $title, $iid + 1);
+		if (isset($image_info) && $image_info !== FALSE){
+		  $images[] = $image_info;
+		}
+      }
+    }
+  }
+  unset($image_srcs, $image_wrappers, $image_hist);
+
+  $address = array();
+  $address['address'] = @$html->find('span.clinic_address', 0)->plaintext;
+  $address['name'] = $title;
+  $address['street'] = $html->find("meta[property='whatclinic:address:street_address']", 0)->content;
+  $address['additional'] = '';
+  $address['city'] =  $html->find("meta[property='whatclinic:address:locality']", 0)->content;
+  $address['province'] = $html->find("meta[property='whatclinic:address:region']", 0)->content;
+  $address['postal_code'] = $html->find("meta[property='whatclinic:address:postal-code']", 0)->content;
+  $address['country'] = _dentist_crawler_country($html->find("meta[property='whatclinic:address:country-name']", 0)->content);
+  $address['latitude'] = $html->find("meta[property='whatclinic:geo:latitude']", 0)->content;
+  $address['longitude'] = $html->find("meta[property='whatclinic:geo:longitude']", 0)->content;
+  $address['mapid'] = 'key_1';
+  $address['marker'] = '';
+  $address['active'] = TRUE;
+ 
+  _dentist_crawl_geocode($address);
+
+  //  debuging scraper 
+   //drupal_set_message('<pre>'. print_r($address , true) .'</pre>');
+  
+  $reactions = $html->find('div.details_bar span.bubble');
+  $reaction_count = 0;
+  if (count($reactions) > 0){
+    foreach ($reactions as $reaction){
+      $reaction_count = (int) $reaction_count + (int) preg_replace('/[^0-9]+/', '', @$reaction->innertext);
+    }
+  }
+  unset($reactions);
+
+  $html->clear();
+
+  switch ($action['action']){
+    case 'do':
+	  $node = new stdClass();
+      break;
+    case 'update':
+	  $node = node_load($action['nid']);
+      break;
+    case 'replace':
+	  $node = new stdClass();
+	  $node->nid = $action['nid'];
+      break;	  
+	default:
+	  $node = new stdClass();
+	  break;
+  }
+  // $node = new stdClass();
+  $node->type = CRAWLER_NODE_TYPE;
+  $node->language = LANGUAGE_NONE;
+  $node->uid = CRAWLER_AUTHOR_UID;
+  $node->name = CRAWLER_AUTHOR_USERNAME;
+  node_object_prepare($node);
+
+  $node->title = trim($title); 
+  //$node->title = 'dsa'; 
+  $node->{CRAWLER_FIELD_ABOUT}['und'][0]['format'] = 'full_html';
+  $node->{CRAWLER_FIELD_ABOUT}['und'][0]['value'] = $about;
+  //$node->{CRAWLER_FIELD_ABOUT}['und'][0]['summary'] = text_summary($about);
+	
+  if (isset($phone_numbers) && !empty($phone_numbers)){
+	$node->{CRAWLER_FIELD_PHONE}['und'][0]['value'] = $phone_numbers;
+  }
+	
+  if (isset($openning) && (!empty($openning))){
+	$node->{CRAWLER_FIELD_OPEN}['und'][0]['format'] = 'full_html';
+    $node->{CRAWLER_FIELD_OPEN}['und'][0]['value'] = $openning;
+    //$node->{CRAWLER_FIELD_OPEN}['und'][0]['summary'] = text_summary($openning);
+  }
+
+  if (count($images) > 0){
+	$node->{CRAWLER_FIELD_IMAGES}['und'] = $images;
+  }
+	
+  if (!empty($address)){
+	$node->{CRAWLER_FIELD_LOCATION}['und'][0] = $address;
+  }
+  if (defined('CRAWLER_FIELD_URL')){
+    $node->{CRAWLER_FIELD_URL}['und'][0]['value'] = $url;
+	$node->{CRAWLER_FIELD_URL}['und'][0]['safe_value'] = $node->{CRAWLER_FIELD_URL}['und'][0]['value'];
+  }
+  unset($about, $numbers, $title, $phone_numbers, $openning, $images);
+  $node = node_submit($node); // Prepare node for saving
+  node_save($node);
+  
+  // assign votes //
+  if ($reaction_count > 0) {
+    _dentist_crawler_ratenode($node->nid, rand(80,100), $reaction_count);
+  }
+  $return_val['success'] = isset($node->nid);
+  if ($return_val['success'] && $action['nid'] === 0){
+    _dentist_crawl_addrecord($url, $node->nid);  
+  }
+  return $return_val;
+}
+
+/**
+ * copies a given image URL to the server and returns a file object as an array.
+ * even though the function name has "curl" in its name, we perform a cheap copy() because this function will be executed several times.
+ */
+function _dentist_crawl_image_curl_individual($url, $title ='', $count =''){
+  if (empty($title)){
+    $title = drupal_basename($url);
+  }
+  if (empty($count) || !is_numeric($count)){
+    $count = hash('adler32', $url);
+  }
+  $title = preg_replace("/[^A-Za-z0-9]/", '-', $title);
+  $filename_parts = pathinfo(basename($url));
+  $allowed_exts = array(
+    'png', 'jpg', 'jpeg', 'gif'
+  );
+  if (!isset($filename_parts['extension'], $filename_parts['filename']) || !in_array(strtolower($filename_parts['extension']), $allowed_exts)){
+    return FALSE;
+  }
+  $filename = file_directory_temp() . '/' . $filename_parts['filename'].'.'.$filename_parts['extension'];
+  $copied = @copy($url, $filename); //Drupal 7, php 5
+  if ($copied === FALSE){
+    watchdog('dentist_crawler', t('An error occurred while downloading the image from @url to @folder', array('@url' => $url, '@folder' => $filename)));
+	return FALSE;
+  }
+  $path = 'public://images/'.$title; 
+  //define('FILE_CREATE_DIRECTORY', 1);
+  $folder = file_prepare_directory($path, FILE_CREATE_DIRECTORY);
+  if ($folder){
+      $path .= '/'.'image_'.$count.'.'.$filename_parts['extension'];
+  }
+  
+  $uri = file_unmanaged_move($filename, $path);
+
+  if ($uri){
+    $file = new StdClass();
+    $file->uid = CRAWLER_AUTHOR_UID;
+    $file->uri = $uri;
+    $file->filename = drupal_basename($uri);
+    $file->filemime = file_get_mimetype($uri);
+    $file->status = 1;      
+    $file->display = 1;
+    $file->description = "";
+
+	file_save($file);
+	if (!isset($file->fid)){
+	  return FALSE;
+	}
+	$file = (array) $file; // we just pass them to the field, so an array is required. 
+    return $file;
+  }
+  else{
+    return FALSE;
+  }
+}
+
+/**
+ * internal function to clean up address fields.
+ */
+function _dentist_crawl_geocode(&$address){
+  if (!empty($address) && is_array($address)){
+    foreach ($address as $element => &$value) {
+	  $value = trim($value);
+	  $value = trim($value, ': ,;');
+	}
+  }
+}
+
+/**
+ * check if the given URL is parsed already, and return extra data.
+ * $return['action'] = do, skip, update, replace
+ * $return['nid'] = (only on update and replace) nid of the node to load. 
+ */
+function dentist_crawl_actionchoose($url){
+  $return = array('action' => 'do', 'nid' => 0);
+  $nid = db_query("SELECT nid FROM {dentist_crawler} WHERE url = :url", array(':url' => $url))->fetchField();
+  if ($nid === FALSE){
+    return $return;
+  }
+  else{
+    $return['action'] = variable_get('dentist_crawler_dedupe_action', 'skip');
+    $return['nid'] = $nid;
+	return $return;
+  }
+}
+
+/**
+ * adds the just-crawled item to the database.
+ */
+function _dentist_crawl_addrecord($url, $nid){
+  $record = new stdClass();
+  $record->url = $url;
+  $record->nid = $nid;
+  drupal_write_record('dentist_crawler', $record);
+}
+
+/**
+ * adds the just-crawled item to the database.
+ */
+function _dentist_crawl_rmrecord($url = '', $nid = ''){
+  if (empty($url) && empty($nid)){
+    return FALSE;
+  }
+  elseif (!empty($url) && !empty($nid)){
+    db_query("DELETE FROM {dentist_crawler} WHERE (url = :url AND nid = :nid)", array(':url' => $url, ':nid' => $nid));
+  }
+  elseif(!empty($nid) && empty($url)){
+    db_delete('dentist_crawler')
+    ->condition('nid', $nid)
+    ->execute();
+  }
+  elseif(empty($nid) && !empty($url)){
+    db_delete('dentist_crawler')
+    ->condition('url', $url)
+    ->execute();
+  }
+
+}
+
+/**
+ * implementation of hook_node_delete
+ * deletes relevant UUID entry when deleting the node. 
+ */
+function dentist_crawler_node_delete($node){
+  if (isset($node->nid) && $node->type == CRAWLER_NODE_TYPE){
+    _dentist_crawl_rmrecord('', $node->nid);
+/* db_delete('dentist_crawler')
+    ->condition('nid', $node->nid)
+    ->execute(); */
+}
+}
+
+/*
+ * core country list after an array_flip().
+ * low scope function to get the country code quickly without asking any server.
+ * getvalue from source, call the function and get 2 char code to be used in the field.
+ */
+function _dentist_crawler_country($country = FALSE){
+$countries = array(
+ 'Afghanistan' => 'AF', 
+ 'Aland Islands' => 'AX', 
+ 'Albania' => 'AL', 
+ 'Algeria' => 'DZ', 
+ 'American Samoa' => 'AS', 
+ 'Andorra' => 'AD', 
+ 'Angola' => 'AO', 
+ 'Anguilla' => 'AI', 
+ 'Antarctica' => 'AQ', 
+ 'Antigua And Barbuda' => 'AG', 
+ 'Argentina' => 'AR', 
+ 'Armenia' => 'AM', 
+ 'Aruba' => 'AW', 
+ 'Australia' => 'AU', 
+ 'Austria' => 'AT', 
+ 'Azerbaijan' => 'AZ', 
+ 'Bahamas' => 'BS', 
+ 'Bahrain' => 'BH', 
+ 'Bangladesh' => 'BD', 
+ 'Barbados' => 'BB', 
+ 'Belarus' => 'BY', 
+ 'Belgium' => 'BE', 
+ 'Belize' => 'BZ', 
+ 'Benin' => 'BJ', 
+ 'Bermuda' => 'BM', 
+ 'Bhutan' => 'BT', 
+ 'Bolivia' => 'BO', 
+ 'Bosnia And Herzegovina' => 'BA', 
+ 'Botswana' => 'BW', 
+ 'Bouvet Island' => 'BV', 
+ 'Brazil' => 'BR', 
+ 'British Indian Ocean Territory' => 'IO', 
+ 'British Virgin Islands' => 'VG', 
+ 'Brunei' => 'BN', 
+ 'Bulgaria' => 'BG', 
+ 'Burkina Faso' => 'BF', 
+ 'Burundi' => 'BI', 
+ 'Cambodia' => 'KH', 
+ 'Cameroon' => 'CM', 
+ 'Canada' => 'CA', 
+ 'Cape Verde' => 'CV', 
+ 'Cayman Islands' => 'KY', 
+ 'Central African Republic' => 'CF', 
+ 'Chad' => 'TD', 
+ 'Chile' => 'CL', 
+ 'China' => 'CN', 
+ 'Christmas Island' => 'CX', 
+ 'Cocos (Keeling) Islands' => 'CC', 
+ 'Colombia' => 'CO', 
+ 'Comoros' => 'KM', 
+ 'Congo (Brazzaville)' => 'CG', 
+ 'Congo (Kinshasa)' => 'CD', 
+ 'Cook Islands' => 'CK', 
+ 'Costa Rica' => 'CR', 
+ 'Croatia' => 'HR', 
+ 'Cuba' => 'CU', 
+ 'Curaçao' => 'CW', 
+ 'Cyprus' => 'CY', 
+ 'Czech Republic' => 'CZ', 
+ 'Denmark' => 'DK', 
+ 'Djibouti' => 'DJ', 
+ 'Dominica' => 'DM', 
+ 'Dominican Republic' => 'DO', 
+ 'Ecuador' => 'EC', 
+ 'Egypt' => 'EG', 
+ 'El Salvador' => 'SV', 
+ 'Equatorial Guinea' => 'GQ', 
+ 'Eritrea' => 'ER', 
+ 'Estonia' => 'EE', 
+ 'Ethiopia' => 'ET', 
+ 'Falkland Islands' => 'FK', 
+ 'Faroe Islands' => 'FO', 
+ 'Fiji' => 'FJ', 
+ 'Finland' => 'FI', 
+ 'France' => 'FR', 
+ 'French Guiana' => 'GF', 
+ 'French Polynesia' => 'PF', 
+ 'French Southern Territories' => 'TF', 
+ 'Gabon' => 'GA', 
+ 'Gambia' => 'GM', 
+ 'Georgia' => 'GE', 
+ 'Germany' => 'DE', 
+ 'Ghana' => 'GH', 
+ 'Gibraltar' => 'GI', 
+ 'Greece' => 'GR', 
+ 'Greenland' => 'GL', 
+ 'Grenada' => 'GD', 
+ 'Guadeloupe' => 'GP', 
+ 'Guam' => 'GU', 
+ 'Guatemala' => 'GT', 
+ 'Guernsey' => 'GG', 
+ 'Guinea' => 'GN', 
+ 'Guinea-Bissau' => 'GW', 
+ 'Guyana' => 'GY', 
+ 'Haiti' => 'HT', 
+ 'Heard Island And Mcdonald Islands' => 'HM', 
+ 'Honduras' => 'HN', 
+ 'Hong Kong S.A.R., China' => 'HK', 
+ 'Hungary' => 'HU', 
+ 'Iceland' => 'IS', 
+ 'India' => 'IN', 
+ 'Indonesia' => 'ID', 
+ 'Iran' => 'IR', 
+ 'Iraq' => 'IQ', 
+ 'Ireland' => 'IE', 
+ 'Isle Of Man' => 'IM', 
+ 'Israel' => 'IL', 
+ 'Italy' => 'IT', 
+ 'Ivory Coast' => 'CI', 
+ 'Jamaica' => 'JM', 
+ 'Japan' => 'JP', 
+ 'Jersey' => 'JE', 
+ 'Jordan' => 'JO', 
+ 'Kazakhstan' => 'KZ', 
+ 'Kenya' => 'KE', 
+ 'Kiribati' => 'KI', 
+ 'Kuwait' => 'KW', 
+ 'Kyrgyzstan' => 'KG', 
+ 'Laos' => 'LA', 
+ 'Latvia' => 'LV', 
+ 'Lebanon' => 'LB', 
+ 'Lesotho' => 'LS', 
+ 'Liberia' => 'LR', 
+ 'Libya' => 'LY', 
+ 'Liechtenstein' => 'LI', 
+ 'Lithuania' => 'LT', 
+ 'Luxembourg' => 'LU', 
+ 'Macao S.A.R., China' => 'MO', 
+ 'Macedonia' => 'MK', 
+ 'Madagascar' => 'MG', 
+ 'Malawi' => 'MW', 
+ 'Malaysia' => 'MY', 
+ 'Maldives' => 'MV', 
+ 'Mali' => 'ML', 
+ 'Malta' => 'MT', 
+ 'Marshall Islands' => 'MH', 
+ 'Martinique' => 'MQ', 
+ 'Mauritania' => 'MR', 
+ 'Mauritius' => 'MU', 
+ 'Mayotte' => 'YT', 
+ 'Mexico' => 'MX', 
+ 'Micronesia' => 'FM', 
+ 'Moldova' => 'MD', 
+ 'Monaco' => 'MC', 
+ 'Mongolia' => 'MN', 
+ 'Montenegro' => 'ME', 
+ 'Montserrat' => 'MS', 
+ 'Morocco' => 'MA', 
+ 'Mozambique' => 'MZ', 
+ 'Myanmar' => 'MM', 
+ 'Namibia' => 'NA', 
+ 'Nauru' => 'NR', 
+ 'Nepal' => 'NP', 
+ 'Netherlands' => 'NL', 
+ 'Netherlands Antilles' => 'AN', 
+ 'New Caledonia' => 'NC', 
+ 'New Zealand' => 'NZ', 
+ 'Nicaragua' => 'NI', 
+ 'Niger' => 'NE', 
+ 'Nigeria' => 'NG', 
+ 'Niue' => 'NU', 
+ 'Norfolk Island' => 'NF', 
+ 'Northern Mariana Islands' => 'MP', 
+ 'North Korea' => 'KP', 
+ 'Norway' => 'NO', 
+ 'Oman' => 'OM', 
+ 'Pakistan' => 'PK', 
+ 'Palau' => 'PW', 
+ 'Palestinian Territory' => 'PS', 
+ 'Panama' => 'PA', 
+ 'Papua New Guinea' => 'PG', 
+ 'Paraguay' => 'PY', 
+ 'Peru' => 'PE', 
+ 'Philippines' => 'PH', 
+ 'Pitcairn' => 'PN', 
+ 'Poland' => 'PL', 
+ 'Portugal' => 'PT', 
+ 'Puerto Rico' => 'PR', 
+ 'Qatar' => 'QA', 
+ 'Reunion' => 'RE', 
+ 'Romania' => 'RO', 
+ 'Russia' => 'RU', 
+ 'Rwanda' => 'RW', 
+ 'Saint Barthélemy' => 'BL', 
+ 'Saint Helena' => 'SH', 
+ 'Saint Kitts and Nevis' => 'KN', 
+ 'Saint Lucia' => 'LC', 
+ 'Saint Martin (French part)' => 'MF', 
+ 'Saint Pierre and Miquelon' => 'PM', 
+ 'Saint Vincent and the Grenadines' => 'VC', 
+ 'Samoa' => 'WS', 
+ 'San Marino' => 'SM', 
+ 'Sao Tome And Principe' => 'ST', 
+ 'Saudi Arabia' => 'SA', 
+ 'Senegal' => 'SN', 
+ 'Serbia' => 'RS', 
+ 'Seychelles' => 'SC', 
+ 'Sierra Leone' => 'SL', 
+ 'Singapore' => 'SG', 
+ 'Slovakia' => 'SK', 
+ 'Slovenia' => 'SI', 
+ 'Solomon Islands' => 'SB', 
+ 'Somalia' => 'SO', 
+ 'South Africa' => 'ZA', 
+ 'South Georgia And The South Sandwich Islands' => 'GS', 
+ 'South Korea' => 'KR', 
+ 'Spain' => 'ES', 
+ 'Sri Lanka' => 'LK', 
+ 'Sudan' => 'SD', 
+ 'Suriname' => 'SR', 
+ 'Svalbard And Jan Mayen' => 'SJ', 
+ 'Swaziland' => 'SZ', 
+ 'Sweden' => 'SE', 
+ 'Switzerland' => 'CH', 
+ 'Syria' => 'SY', 
+ 'Taiwan' => 'TW', 
+ 'Tajikistan' => 'TJ', 
+ 'Tanzania' => 'TZ', 
+ 'Thailand' => 'TH', 
+ 'Timor-Leste' => 'TL', 
+ 'Togo' => 'TG', 
+ 'Tokelau' => 'TK', 
+ 'Tonga' => 'TO', 
+ 'Trinidad And Tobago' => 'TT', 
+ 'Tunisia' => 'TN', 
+ 'Turkey' => 'TR', 
+ 'Turkmenistan' => 'TM', 
+ 'Turks And Caicos Islands' => 'TC', 
+ 'Tuvalu' => 'TV', 
+ 'U.S. Virgin Islands' => 'VI', 
+ 'Uganda' => 'UG', 
+ 'Ukraine' => 'UA', 
+ 'United Arab Emirates' => 'AE', 
+ 'United Kingdom' => 'GB', 
+ 'United States' => 'US', 
+ 'United States Minor Outlying Islands' => 'UM', 
+ 'Uruguay' => 'UY', 
+ 'Uzbekistan' => 'UZ', 
+ 'Vanuatu' => 'VU', 
+ 'Vatican' => 'VA', 
+ 'Venezuela' => 'VE', 
+ 'Vietnam' => 'VN', 
+ 'Wallis and Futuna' => 'WF', 
+ 'Western Sahara' => 'EH', 
+ 'Yemen' => 'YE', 
+ 'Zambia' => 'ZM', 
+ 'Zimbabwe' => 'ZW', 
+ );
+ if ($country !== FALSE){
+   return $countries[ucwords(strtolower($country))];
+ }
+ elseif ($country == ''){
+   return '';
+ }
+ elseif ($country == FALSE){
+   return $countries;
+ }
+ }
+ 
+ /**
+ * helper function to add votes to given node ID, with a given value and count.
+ * Randomized the $value to add natural effect
+ */
+function _dentist_crawler_ratenode($nid, $value, $count){
+  $vote = array();
+  $vote['entity_id'] = $nid;
+  $vote['value'] = $value;
+  $vote['uid'] = 0;
+
+  $value = round($value / 20);
+  $min = $value == 0 ? $value : $value - 1;
+  $max = $value == 5 ? $value : $value + 1;
+  $value = $value * 20;
+  
+  $votes = array();
+  for ($i = 1; $i <= $count; $i++) {
+    $votes[$i] = $vote;
+    $pass = array_rand(array(1 => '', 2 => '', 3 => '', 100 => '')); // 25% by 50% 
+    if ((int) $pass > 50){
+      $votes[$i]['value'] = array_rand(array($min => '', $max => '')) * 20;;
+    }
+  }
+  votingapi_add_votes($votes);
+  votingapi_recalculate_results('node', $nid);
+}
+
+/**
+ * helper function to parse the phone number
+ */
+function _dentist_crawler_parse_numbers($phone_link){
+  $html_cont = file_get_contents($phone_link);
+  $html = new simple_html_dom();
+  $html->load($html_cont);
+  unset($html_cont);
+  $numbers = @$html->find('span[id=LiteralPhone]', 0)->innertext;
+  $html->clear();
+  return $numbers;
+}

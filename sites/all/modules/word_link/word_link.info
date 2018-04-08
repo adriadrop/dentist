@@ -1,0 +1,11 @@
+name = Word Link
+description = Allows users to convert defined words to links.
+core = 7.x
+configure = admin/config/content/word-link/configuration
+
+; Information added by drupal.org packaging script on 2013-02-23
+version = "7.x-1.7"
+core = "7.x"
+project = "word_link"
+datestamp = "1361648970"
+

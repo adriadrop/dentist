@@ -1,0 +1,5 @@
+name = views_send_alters
+description = views_send_alters
+core = 7.x
+package = Custom
+dependencies[] = views_send

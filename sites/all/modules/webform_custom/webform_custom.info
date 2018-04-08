@@ -1,0 +1,5 @@
+name = Webform custom module
+description = Custom webform module, for altering output of sent emails
+core = 7.x
+package = Webform
+dependencies[] = webform

@@ -1,0 +1,36 @@
+﻿<?php
+function views_send_alters_form_alter(&$form, &$form_state, $form_id) {
+ if ($form_id == 'views_form_zatra_i_ponudu_page' && isset($form_state['step']) && $form_state['step'] == 'views_send_config_form'){
+ //dsm($form);
+ if (isset($form['to']['views_send_to_name']['#default_value'], $form['to']['views_send_to_mail']['#default_value']) && 
+	$form['to']['views_send_to_name']['#default_value'] != '' &&
+	$form['to']['views_send_to_mail']['#default_value'] != ''){
+	$name_found = FALSE; $mail_found = FALSE;
+	foreach ($form['to']['views_send_to_name']['#options'] as $fid => $fel){
+		if (is_array($fel) && isset($form['to']['views_send_to_name']['#default_value'])){
+			$name_found = TRUE;
+			break;
+		}
+		elseif($fid == $form['to']['views_send_to_name']['#default_value']){
+			$name_found = TRUE;
+			break;
+		}
+	}
+	foreach ($form['to']['views_send_to_mail']['#options'] as $fid => $fel){
+		if (is_array($fel) && isset($form['to']['views_send_to_mail']['#default_value'])){
+			$mail_found = TRUE;
+			break;
+		}
+		elseif($fid == $form['to']['views_send_to_mail']['#default_value']){
+			$mail_found = TRUE;
+			break;
+		}
+	}
+	if ($mail_found && $name_found){
+		$form['to']['#access'] = FALSE;
+		$form['views_send_remember']['#value'] = TRUE;
+		$form['views_send_remember']['#access'] = FALSE;
+	}
+	}
+  }
+}

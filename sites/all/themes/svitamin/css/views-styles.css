@@ -1,0 +1,244 @@
+/**
+ * @file
+ * Views Styling
+ */
+
+/*
+ * Views' admin tabs
+ *
+ * The views admin tabs use the same classes as the secondary tabs. We prevent
+ * some of our tab styling from bleeding into (and breaking) the Views admin
+ * pages. If your sub-theme isn't used for admin pages, you can remove this
+ * entire section.
+ */
+
+.views-displays .secondary li {
+    float: none;
+    margin: 0 6px 0;
+}
+
+.views-displays .secondary a:link,
+.views-displays .secondary a:visited {
+    text-shadow: none;
+    padding: 2px 7px 3px;
+}
+
+.views-displays .secondary .open > a {
+    -webkit-border-radius: 7px 7px 0 0;
+    -moz-border-radius: 7px 7px 0 0;
+    -ms-border-radius: 7px 7px 0 0;
+    -o-border-radius: 7px 7px 0 0;
+    border-radius: 7px 7px 0 0;
+}
+
+.views-displays .secondary .open > a:hover {
+    color: #333;
+}
+
+.views-displays .secondary .action-list li {
+    margin: 0;
+}
+
+.views-displays .secondary .action-list li:first-child {
+    -webkit-border-radius: 0 7px 0 0;
+    -moz-border-radius: 0 7px 0 0;
+    -ms-border-radius: 0 7px 0 0;
+    -o-border-radius: 0 7px 0 0;
+    border-radius: 0 7px 0 0;
+}
+
+.views-displays .secondary .action-list li:last-child {
+    -webkit-border-radius: 0 0 7px 7px;
+    -moz-border-radius: 0 0 7px 7px;
+    -ms-border-radius: 0 0 7px 7px;
+    -o-border-radius: 0 0 7px 7px;
+    border-radius: 0 0 7px 7px;
+}
+
+.dent-olist .field-label, .view-helper-views .field-label {
+    display: inline;
+}
+
+.dent-olist .view-content {
+    padding-bottom: 15px;
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 35px;
+}
+
+.dent-olist .view-content .ds-2col > .group-left, .view-helper-views .view-content .ds-2col > .group-left {
+    float: left;
+    width: 320px;
+    position: relative;
+}
+
+.dent-olist .views-field-field_rating {
+    position: absolute;
+    right: 20px;
+    bottom: 12px;
+}
+
+.attachment .dent-olist .views-field-field_rating {
+    position: relative;
+    right: 0;
+    bottom: 0;
+}
+
+.dent-olist .view-content .ds-2col > .group-right {
+    float: left;
+    width: 620px;
+}
+
+.dent-olist .view-content .ds-2col > .group-right .views-field-title {
+    font-size: 18px;
+}
+
+.attachment-after .dent-olist .view-content .ds-2col > .group-left {
+    float: left;
+    width: 220px;
+}
+
+.attachment-after .dent-olist .view-content .ds-2col > .group-right {
+    float: left;
+    width: 260px;
+}
+
+.attachment-after .dent-olist .view-content .ds-2col > .group-right .views-field-title {
+    font-size: 14px;
+}
+
+.dent-olist .views-field-field-images img {
+    border: 1px solid #e2e2e2;
+    background-color: #fff;
+    padding: 5px;
+    width: 100%;
+    max-width: 300px;
+}
+
+.attachment .dent-olist .views-field-field-images img {
+    border: 1px solid #e2e2e2;
+    background-color: #fff;
+    padding: 5px;
+    width: 100%;
+    margin-right: 5px;
+    max-width: 200px;
+}
+
+.dent-olist img:hover {
+    background: #FFFFBF !important;
+    border: 1px solid #fff;
+}
+
+.dent-olist .views-row {
+    margin-bottom: 30px;
+}
+
+.dent-olist .views-row:hover {
+    background: #fff !important;
+}
+
+.dent-olist  .views-field-field_images a {
+    line-height: 0px;
+    display: block;
+}
+
+.dent-olist .view-display-id-attachment_2 td {
+    padding-top: 20px;
+}
+
+.dent-olist .view-display-id-attachment_2 .col-1, .dent-olist .view-display-id-attachment_2 .col-2,
+.block-views-special-dentists-block .dent-olist .col-1, .block-views-special-dentists-block .dent-olist .col-2 {
+    width: 270px;
+}
+
+.dent-olist .views-field-field-rating {
+    margin-bottom: 10px;
+    display: block;
+    margin-left: 10px;
+}
+
+.view-prices-view td.views-field-title img {
+    display: block;
+}
+
+.view-prices-view td.views-field-title {
+    font-weight: bold;
+    width: 130px;
+    padding-right: 1em;
+}
+
+.view-prices-view .field-type-number-integer, .view-prices-view .field-name-field-dentist {
+    display: inline-block;
+}
+
+.view-prices-view .field-type-number-integer .field-items, .view-prices-view .field-name-field-dentist .field-items {
+    display: inline-block;
+}
+
+.view-prices-view {
+    font-size: 15px;
+}
+
+.view-prices-view .field-name-field-dentist::before {
+    content: " - ";
+    display: inline-block;
+    margin: 0 0.4em;
+}
+
+.view-prices-view .views-field-field-prices-all ul {
+    margin-bottom: 0.3em;
+    list-style: none;
+    padding-left: 0;
+}
+
+.view-prices-view .more-prices {
+    margin-left: 0;
+}
+
+.view-prices-view .more-prices a {
+    color: #b1b4b3;
+    font-weight: bold;
+}
+
+.view-dentist-prices td {
+    width: 100%;
+}
+
+.view-Blog .views-row {
+    margin-bottom: 1em;
+}
+
+.view-Blog .views-field-field-image img {
+    width: 100%;
+}
+
+.view-Blog .views-field-view-node {
+    text-align: right;
+}
+
+.views-exposed-widget-extra {
+    float: left;
+    padding: .5em 1em 0 0;
+    display: none;
+}
+
+.views-exposed-widget-extra a {
+    margin-top: 1.6em;
+    display: block;
+    cursor: pointer;
+    font-weight: bold;
+    padding: 7px 20px;
+    font-size: 15px;
+    color: white;
+    background-color: red;
+    border: none;
+    text-align: center;
+    line-height: 17px;
+}
+
+.getdirections-map {
+    width: 100%;
+}
+.view-blog .views-field-view-node {
+    margin-bottom: 20px;
+    margin-top: 10px;
+}

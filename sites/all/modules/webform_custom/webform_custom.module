@@ -1,0 +1,31 @@
+﻿<?php
+function webform_custom_mail_alter(&$message){
+  if ($message['params']['email']['nid'] == '1074' && $message['key'] == 'submission'){
+	 
+	  $name_field = $message['params']['submission']->data[1]['value'][0];
+	  $email_field = $message['params']['submission']->data[2]['value'][0];
+	  $tel_field = $message['params']['submission']->data[3]['value'][0];
+	  $problem_field = $message['params']['submission']->data[4]['value'][0];	
+	  $link_field = $message['params']['submission']->data[9]['value'][0];		    	  
+	 if ($message['params']['submission']->data[13]['value'][0] == "Not Payed" || empty($message['params']['submission']->data[13]['value'][0])){
+ 		$message['params']['email']['from'] = '<marko@arabba.hr>';
+		$message['headers']['From'] = '<marko@arabba.hr>';
+		$message['from'] = '<marko@arabba.hr>';
+		//create custom body that will be sent
+		$email_field = $message['params']['submission']->data[2]['value'][0];
+		$message['body'][0] = '<p>Nome: '. $name_field .'<br>'.
+			'E-mail: '. substr($email_field, 0, strpos($email_field, '@')).'@******<br>'.
+			'Cell/Tel: **** ****'.'<br>'.
+			'Problema o domanda: '. $problem_field.'</p>'.
+			'<p>Da: '. $link_field .'</p>'.
+			'Želite li primate upit sa svim podacima, odaberite jedan od naših paketa za marketing http://www.croaziadentisti.it/marketing';
+	 } else {
+		 $message['body'][0] = '<p>Nome: '. $name_field .'<br>'.
+			'E-mail: '. $email_field .'<br>'.
+			'Cell/Tel: '. $tel_field .'<br>'.
+			'Problema o domanda: '. $problem_field.'</p>'.
+			'<p>Da: '. $link_field .'</p>';
+	 }
+	 // dpm($message);
+  }
+}

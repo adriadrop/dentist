@@ -1,0 +1,219 @@
+<?php
+
+/**
+ * @file
+ * VBO action to search and replace text in the node. Field, search and replace texts are configurable.
+ * vbo_nodesearchreplace.
+ */
+
+/**
+ * Implements hook_action_info().
+ * Registers custom VBO actions as Drupal actions.
+ */
+function vbo_nodesearchreplace_action_info() {
+  return array(
+    'vbo_nodesearchreplace_node_searchreplace_action' => array(
+      'type' => 'node',
+      'label' => t('Search and replace text in a field'),
+      'behavior' => array('changes_property'),
+      'configurable' => FALSE,
+      'vbo_configurable' => TRUE,
+      'triggers' => array('any'),
+    ),
+  );
+}
+
+/*
+ * Action function vbo_nodesearchreplace_node_searchreplace_action
+ */
+function vbo_nodesearchreplace_node_searchreplace_action(&$node, $context) {
+  $field_keys = array('value', 'summary', 'safe_value', 'safe_summary');
+  $getlocation_text_keys = array(
+    'name',
+    'street',
+    'additional',
+    'city',
+    'province',
+    'province_name',
+    'postal_code',
+  );
+  $replace = $context['search'];
+  if ($context['replace_none']) {
+    $replace = '';
+  }
+  else {
+    $replace = $context['replace'];
+  }
+
+  if (isset($context['field'], $context['search'])) {
+    if (!isset($node->{$context['field']})) {
+      drupal_set_message(t('Node %title does not contain the %field field. Skipped.',
+      array(
+        '%title' => !empty($node->title) ? $node->title : '['. t('title unknown') . ']',
+        '%field' => $context['field'],
+      )
+      ), 'warning');
+    }
+    else{
+      if (!empty($node->{$context['field']}[LANGUAGE_NONE]) && is_array($node->{$context['field']}[LANGUAGE_NONE])) {
+        foreach ($node->{$context['field']}[LANGUAGE_NONE] as $key => &$field) {
+          foreach ($field_keys as $fkey) {
+            if (!empty($field[$fkey])) {
+             $replacement = vbo_nodesearchreplace_node_searchreplace(
+               $context['search'], 
+               $replace, 
+               $field[$fkey]
+             );
+              if ($replacement !== FALSE) {
+                $node->{$context['field']}[LANGUAGE_NONE][$key][$fkey] = 
+                  $replacement;
+              }
+              unset($replacement);
+            }
+          }
+          // Iterate through getlocations fields, only text fields. 
+          if (isset($node->{$context['field']}[LANGUAGE_NONE][$key]['glid'])){
+            foreach ($getlocation_text_keys as $gkey) {
+              if (!empty($field[$gkey])) {
+                $replacement = vbo_nodesearchreplace_node_searchreplace(
+                  $context['search'], 
+                  $replace, 
+                  $field[$gkey]
+                );
+                if ($replacement !== FALSE) {
+                  $node->{$context['field']}[LANGUAGE_NONE][$key][$gkey] = 
+                    $replacement;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/*
+ * Implements hook_ACTION_form().
+ * Returns the configuration form for a single VBO execution.
+ */
+function vbo_nodesearchreplace_node_searchreplace_action_form($settings) {
+  $form = array();
+  $form['field'] = array(
+    '#type' => 'select',
+    '#title' => t('Choose the field to perform the action on'),
+    '#options' => _vbo_nodesearchreplace_get_fieldlist(),
+    '#default_value' => empty($settings['settings']['field']) ? '' : $settings['settings']['field'],
+    '#required' => empty($settings['preconfig']),
+  );
+  $form['search'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Text to search for'),
+    '#rows' => 4,
+    '#required' => TRUE,
+  );
+  $form['replace_none'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Remove all occurrences of the search string.'),
+    '#default_value' => TRUE,
+  );
+  $form['replace'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Text to replace matching phrases with'),
+    '#rows' => 4,
+    '#states' => array(
+      'visible' => array(
+        ':input[name="replace_none"]' => array('checked' => FALSE),
+      ),
+    ),
+  );
+  return $form;
+}
+
+/*
+ * Submit handler of vbo_nodesearchreplace_node_searchreplace_action_form().
+ * Returns an array of data to be included in the action function's second parameter.
+ */
+function vbo_nodesearchreplace_node_searchreplace_action_submit($form, $form_state) {
+  $return = array();
+  $fields = array('field', 'replace_none', 'replace', 'search');
+  foreach ($fields as $field) {
+    $return[$field] = $form_state['values'][$field];
+  }
+  return $return;
+}
+
+/*
+ * Configuration form builder for the Views UI VBO field settings form.
+ */
+function vbo_nodesearchreplace_node_searchreplace_action_views_bulk_operations_form($options) {
+  $form = array();
+  $form['field'] = array(
+    '#type' => 'select',
+    '#title' => t('Choose the field to perform the action on'),
+    '#options' => _vbo_nodesearchreplace_get_fieldlist(),
+    '#required' => TRUE,
+    '#default_value' => empty($options['field']) ? '' : $options['field'],
+    '#description' => t('This value will be the default selection in the per-execution configuration form.'),
+  );
+  return $form;
+}
+
+/*
+ * Helper function to return a list of possible fields across all node types.
+ */
+function _vbo_nodesearchreplace_get_fieldlist($entity = 'node') {
+  $fields = field_info_instances($entity);
+  $choose_fields = array();
+  $fields = array_filter($fields);
+  $allowed_types = array(
+    'text',
+    'number',
+    'getlocations_fields',
+  );
+  foreach ($fields as $type => $type_fields) {
+    foreach ($type_fields as $field) {
+      if (in_array($field['widget']['module'], $allowed_types)) {
+        $choose_fields[$type][$field['field_name']] = format_string('@label (@machine_name)', array(
+          '@machine_name' => $field['field_name'],
+          '@label' => $field['label'],
+        ));
+      }
+    }
+  }
+  return $choose_fields;
+}
+
+function vbo_nodesearchreplace_node_searchreplace($search, $replace, $subject) {
+  if (strpos($subject, $search)) {
+    return str_replace($search, $replace, $subject);  
+  }
+  
+  // Try stripping all new lines.
+  $try_search = str_replace(array("\r\n", PHP_EOL), '', $search);
+  if (strpos($subject, $try_search) !== FALSE) {
+    return str_replace($try_search, $replace, $subject); 
+  }
+  
+  // Try replacing Windows with unix line endings. 
+  $try_search = str_replace("\r\n", PHP_EOL, $search);
+  if (strpos($subject, $try_search) !== FALSE) {
+    return str_replace($try_search, $replace, $subject);
+  }
+  
+  // Try replacing Mac with Unix line endings
+  $try_search = str_replace("\r", PHP_EOL, $search);
+  if (strpos($subject, $try_search) !== FALSE) {
+    return str_replace($try_search, $replace, $subject);
+  }
+
+  // Try converting them both. 
+  $replace_br = nl2br($replace);
+  $search_br = nl2br($search);
+  $subject_br = nl2br($subject);
+  if (strpos($subject_br, $search_br) !== FALSE) {
+    $replaced = str_replace($search_br, $replace_br, $subject_br);
+    return $replaced;
+  }
+  return FALSE;
+}

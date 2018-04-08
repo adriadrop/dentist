@@ -1,0 +1,224 @@
+/**
+ * @file
+ * Node Styling
+ *
+ * Style anything that isn't in the $content variable.
+ */
+
+
+.node { /* Node wrapper */
+}
+
+.preview .node { /* Preview of the content before submitting new or updated content */
+  /* background-color: #ffffea; */ /* Drupal core uses a #ffffea background */
+}
+
+.node .node-title { /* Node title */
+}
+
+.node .user-picture { /* The picture of the node author */
+}
+
+.node .submitted { /* The "posted by" information */
+}
+
+.node .content { /* Node's content wrapper */
+}
+
+.node ul.links { /* Node links. See also the ul.links declaration in the pages.css. */
+}
+
+.node-promoted { /* A node that has been promoted to the front page */
+}
+
+.node-sticky { /* A sticky node (displayed before others in a list) */
+}
+
+.node-by-viewer { /* A node created by the current user */
+}
+
+.node-teaser { /* A node displayed as teaser */
+}
+
+/*
+ * All nodes are given a node-FOO class that describes the type of content that
+ * it is. If you create a new content type called "my-custom-type", it will
+ * receive a "node-my-custom-type" class.
+ */
+
+.node-page { /* Page content node */
+}
+
+.node-article { /* Article content node */
+}
+
+.node-unpublished { /* Unpublished nodes */
+  /* background-color: #fff4f4; */ /* Drupal core uses a #fff4f4 background */
+}
+
+.node-unpublished p.unpublished,
+.comment-unpublished p.unpublished { /* The word "Unpublished" displayed underneath the content. */
+  height: 0;
+  overflow: visible;
+  color: #d8d8d8;
+  font-size: 75px;
+  line-height: 1;
+  font-family: Impact, "Arial Narrow", Helvetica, sans-serif;
+  font-weight: bold;
+  text-transform: uppercase;
+  text-align: center;
+  word-wrap: break-word; /* A very nice CSS3 property */
+}
+
+.lt-ie8 .node-unpublished p.unpublished > *,
+.lt-ie8 .comment-unpublished > * {
+  position: relative; /* Otherwise these elements will appear below the "Unpublished" text. */
+}
+
+.node-dentist .field-type-text-long p{
+margin: 0px;
+padding: 0px;
+line-height: 20px;
+}
+
+.node-dentist .group_div_info_2 {
+line-height: 20px;
+}
+
+.node-dentist .group {
+   margin:10px 0;
+   background-color:#f6f6f6;
+   padding:7px 10px;
+}
+.node-dentist .group_contact {
+	background:#e9f2f4 !important;
+}
+.group_photos, .group_info {
+    overflow: hidden;
+}
+.group_info .container{
+	display:inline-block;
+	margin-right:10px;
+	vertical-align:top;
+}
+
+
+.group_photos .field-item img {
+	float:left;
+	margin-right:8px;
+	margin-bottom:3px;
+	margin-top:3px;
+	border: 1px solid #e2e2e2;
+	background-color: #fff;
+	padding: 3px;	
+}
+.group .field-name-field-url p, .group .field-name-field-opening-hours p, .group .field-name-field-freebies p{
+	margin:0px;
+	padding:0px;
+}
+
+.group_div_info_1 img{
+	border: 1px solid #e2e2e2;
+	background-color: #fff;
+	padding: 5px;
+}
+.group_div_info_3 {
+	float:right;
+}
+.group_div_info_1 {
+	position:relative;
+}
+.group_div_info_2 {
+	max-width:310px;
+}
+.group_div_info_2 .field-name-address .views-label{
+	float:left;
+	font-weight:bold;
+	margin-right: 5px;
+}
+
+.group_div_info_2 .field-name-address .field-content{
+	float:left;
+}
+.group_reviews{
+	min-height:90px;
+}
+.group_reviews .field{
+	display: inline-block;
+	vertical-align: top;
+}
+.group_reviews .field-name-add-review{
+	margin-right:150px;
+	margin-top:10px;
+}
+
+.group_reviews .field-name-reviews-list {
+	margin-top:10px;
+	width: 625px;
+}
+.group_reviews .field-name-reviews-list .view-header{
+	font-weight:bold;
+	margin-bottom:10px;
+}
+.group_reviews .field-name-reviews-list .views-field-created{
+	font-weight:bold;
+}
+.group_reviews .field-name-add-review a, .group_div_info_1 .field-name-anchor-buttons a{
+	background: #ccc;
+	padding: 6px 12px;
+	text-decoration: none;
+	margin-top: 61px;
+}
+.group_div_info_1 .field-name-anchor-buttons a#button_cont{
+	background: #ffba00;
+	color:#fff;
+	margin-right:5px;
+}
+.group_div_info_1 .field-name-anchor-buttons a#button_rec{
+	background: #00a140;
+	color:#fff;
+}
+.group_div_info_1 .field-name-field-rating{
+	position:absolute;
+	bottom:48px;
+	right:10px;
+}
+.group_div_info_1 .field-name-anchor-buttons{
+	margin-top:5px;
+}
+.group_div_info_1 .field-name-anchor-buttons a:hover{
+	text-decoration:underline;
+}
+
+#comment-form .form-item-name, #comment-form .form-item-mail {
+	display: inline-block;
+    vertical-align: top;
+	margin-right:20px;
+}
+#comment-form .form-item .description{
+	font-size:9px;
+}
+
+#comment-form .form-textarea-wrapper{
+	width:550px;
+}
+
+.getlocations_fields_latlon_wrapper_themed{
+	width: 300px;
+}
+
+.group_div_info_3 .field-name-fb-like {
+color: #c4c2c2;
+font-size: 12px;
+font-weight: normal;
+padding-bottom: 10px;
+text-align: center;
+}
+
+.group_div_info_3 .field-name-fb-like .liner{
+	margin:7px 0;
+}
+
+.webform-component-textarea {
+	max-width:650px;
+}

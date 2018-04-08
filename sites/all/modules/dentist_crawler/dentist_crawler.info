@@ -1,0 +1,7 @@
+name = Crawler
+description = Crawls WhatClinic's dentist list and creates nodes with crawled data with support from Google Geocode API.
+core = 7.x
+package = Custom
+dependencies[] = getlocations_fields
+dependencies[] = simplehtmldom
+dependencies[] = votingapi
